@@ -10,6 +10,7 @@ class Blockchain(object):
     def __init__(self):
         self.chain = []
         self.current_transactions = []
+        # set() is used tonhold the list of nodes
         self.nodes = set()
 
         # create the first block
@@ -29,6 +30,35 @@ class Blockchain(object):
             self.nodes.add(parsed_url.path)
         else:
             raise ValueError('Invalid URL')
+
+    def valid_chain(self, chain):
+        """
+        Determine if a given blockchain is valid
+
+        :param chain: <list> A blockchain
+        :return: <bool> True if valid else False
+        """
+
+        last_block = chain[0]
+        current_index = 1
+
+        while current_index < len(chain):
+            block = chain[current_index]
+            print(f'{last_block}')
+            print(f'{block}')
+            print("\n--------\n")
+            # Chekc if the hash of the block is correct
+            if block['previous_hash'] != self.hash(last_block):
+                return False
+
+            # Check of the Proof of Work is correct
+            if not self.valid_proof(last_block['proof'], block['proof']):
+                return False
+
+            last_block = block
+            current_index += 1
+
+        return True
 
     def new_block(self, proof, previous_hash=None):
         """
@@ -52,17 +82,17 @@ class Blockchain(object):
         self.chain.append(block)
         return block
 
-    def new_transaction(self, sender, recepient, amount):
+    def new_transaction(self, sender, recipient, amount):
         """
         Creates a new transaction to go into the next mined  Block
         :param sender: <str> Address of the sender
-        :param recepient: <str> Address of the recepient
+        :param recipient: <str> Address of the recipient
         :param amount: <int> Amount
         :return: <int> the index of the block that will hold this transaction
         """
         self.current_transactions.append({
             'sender': sender,
-            'recepient': recepient,
+            'recipient': recipient,
             'amount': amount,
         })
 
@@ -133,7 +163,7 @@ def mine():
     # Sender is "0" to signify that this node has mined a new coin
     blockchain.new_transaction(
         sender="0",
-        recepient=node_identifier,
+        recipient=node_identifier,
         amount=1
     )
 
@@ -154,12 +184,12 @@ def new_transaction():
     values = request.get_json()
 
     # Check that the required fields are in the POST'ed data
-    required = ['sender', 'recepient', 'amount']
+    required = ['sender', 'recipient', 'amount']
     if not all(k in values for k in required):
         return "Missing Values", 400
 
     # Create a new transaction
-    index = blockchain.new_transaction(values['sender'], values['recepient'], values['amount'])
+    index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
 
     response = {'message': f'Transaction will be added to Block {index}'}
     return jsonify(response), 201
