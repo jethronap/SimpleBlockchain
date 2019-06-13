@@ -113,6 +113,15 @@ class Blockchain(object):
         last_block = blockchain.last_block
         last_proof = last_block['proof']
         proof = blockchain.proof_of_work(last_proof)
+
+        # Reward received  for finding proof
+        # Sender is "0" to signify that this node has mined a new coin
+        blockchain.new_transaction(
+            sender="0",
+            recepient=node_identifier,
+            amount=1
+        )
+        
         return "We'll mine a new block"
 
     @app.route('/transactions/new', methods=['POST'])
