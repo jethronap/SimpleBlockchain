@@ -114,65 +114,63 @@ class Blockchain(object):
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
 
-    # Instantiate Node
-    app = Flask(__name__)
+# Instantiate Node
+app = Flask(__name__)
 
-    # Generate a globally unique address for this Node
-    node_identifier = str(uuid4()).replace('-', '')
+# Generate a globally unique address for this Node
+node_identifier = str(uuid4()).replace('-', '')
 
-    # Instantiate the Blockchain
-    blockchain = Blockchain()
+# Instantiate the Blockchain
+blockchain = Blockchain()
 
-    @app.route('/mine', methods=['GET'])
-    def mine():
-        # We run the proof of work algorithm to get the next  proof...
-        last_block = blockchain.last_block
-        last_proof = last_block['proof']
-        proof = blockchain.proof_of_work(last_proof)
+@app.route('/mine', methods=['GET'])
+def mine():
+    # We run the proof of work algorithm to get the next  proof...
+    last_block = blockchain.last_block
+    last_proof = last_block['proof']
+    proof = blockchain.proof_of_work(last_proof)
+    # Reward received  for finding proof
+    # Sender is "0" to signify that this node has mined a new coin
+    blockchain.new_transaction(
+        sender="0",
+        recepient=node_identifier,
+        amount=1
+    )
 
-        # Reward received  for finding proof
-        # Sender is "0" to signify that this node has mined a new coin
-        blockchain.new_transaction(
-            sender="0",
-            recepient=node_identifier,
-            amount=1
-        )
+    # Forge the new Block  by adding it to the chain
+    previous_hash = blockchain.hash(last_block)
+    block = blockchain.new_block(proof, previous_hash)
+    response = {
+        'message': "New Block Added",
+        'index': block['index'],
+        'transactions': block['transactions'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash'],
+    }
+    return jsonify(response), 200
 
-        # Forge the new Block  by adding it to the chain
-        previous_hash = blockchain.hash(last_block)
-        block = blockchain.new_block(proof, previous_hash)
+@app.route('/transactions/new', methods=['POST'])
+def new_transaction():
+    values = request.get_json()
 
-        response = {
-            'message': "New Block Added",
-            'index': block['index'],
-            'transactions': block['transactions'],
-            'proof': block['proof'],
-            'previous_hash': block['previous_hash'],
-        }
-        return jsonify(response), 200
+    # Check that the required fields are in the POST'ed data
+    required = ['sender', 'recepient', 'amount']
+    if not all(k in values for k in required):
+        return "Missing Values", 400
 
-    @app.route('/transactions/new', methods=['POST'])
-    def new_transaction():
-        values = request.get_json()
+    # Create a new transaction
+    index = blockchain.new_transaction(values['sender'], values['recepient'], values['amount'])
 
-        # Check that the required fields are in the POST'ed data
-        required = ['sender', 'recepient', 'amount']
-        if not all(k in values for k in required):
-            return "Missing Values", 400
+    response = {'message': f'Transaction will be added to Block {index}'}
+    return jsonify(response), 201
 
-        # Create a new transaction
-        index = blockchain.new_transaction(values['sender'], values['recepient'], values['amount'])
+@app.route('/chain', methods=['GET'])
+def full_chain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain),
+    }
+    return jsonify(response), 200
 
-        response = {'message': f'Transaction will be added to Block {index}'}
-        return jsonify(response), 201
-
-    @app.route('/chain', methods=['GET'])
-    def full_chain():
-        response = {
-            'chain': blockchain.chain,
-            'length': len(blockchain.chain),
-        }
-        return jsonify(response), 200
-
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=5000)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
