@@ -5,7 +5,6 @@ from time import time
 import requests
 from uuid import uuid4
 from urllib.parse import urlparse
-
 from flask import Flask, jsonify, request
 
 class Blockchain(object):
@@ -21,14 +20,14 @@ class Blockchain(object):
     def register_node(self, address):
         """
         Add a new node to the list of nodes
-        :param address: Address of node. Eg. 'http://192.168.0.5:5000'
+        :param address: Address of node. Eg. 'http://192.168.0.5:5001'
         """
 
         parsed_url = urlparse(address)
         if parsed_url.netloc:
             self.nodes.add(parsed_url.netloc)
         elif parsed_url.path:
-            # Accepts an URL without scheme like '192.168.0.5:5000'.
+            # Accepts an URL without scheme like '192.168.0.5:5001'.
             self.nodes.add(parsed_url.path)
         else:
             raise ValueError('Invalid URL')
@@ -271,4 +270,4 @@ def consensus():
     return jsonify(response), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5001)
