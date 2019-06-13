@@ -10,6 +10,7 @@ class Blockchain(object):
     def __init__(self):
         self.chain = []
         self.current_transactions = []
+        self.nodes = set()
 
         # create the first block
         self.new_block(previous_hash=1, proof=100)
