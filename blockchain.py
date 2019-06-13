@@ -121,8 +121,19 @@ class Blockchain(object):
             recepient=node_identifier,
             amount=1
         )
-        
-        return "We'll mine a new block"
+
+        # Forge the new Block  by adding it to the chain
+        previous_hash = blockchain.hash(last_block)
+        block = blockchain.new_block(proof, previous_hash)
+
+        response = {
+            'message': "New Block Added",
+            'index': block['index'],
+            'transactions': block['transactions'],
+            'proof': block['proof'],
+            'previous_hash': block['previous_hash'],
+        }
+        return jsonify(response), 200
 
     @app.route('/transactions/new', methods=['POST'])
     def new_transaction():
